@@ -49,12 +49,14 @@ func main() {
 		fmt.Println("device disconnected: terminating app")
 	}()
 
+	// Configure state polling; retrieve state every 30 seconds and log
+	// it to stdout.
 	d.PollState(time.Duration(30)*time.Second, func(state []byte) {
 		fmt.Println("recieved latest state from device", state)
 	})
 
 	fmt.Println("setting brightness to maximum")
-	d.WriteCommand(device.BrightnessCommandFromValue(0x80))
+	d.WriteCommand(device.BrightnessCommandFromValue(96)) // 96%
 
 	i := 1
 	t := time.NewTimer(time.Second)

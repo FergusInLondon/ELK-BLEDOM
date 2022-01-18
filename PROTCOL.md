@@ -20,6 +20,7 @@ Here's a simple block diagram showing the components in use:
 
 The circuit has an operating voltage of 3.3-20V. Whilst the LDO can regulate voltages up to 24V, the MOSFETs are only rated to drain up to 20V. (With a current of up to 3.5A)
 
+A generalised interface could allow the bluetooth control of other peripherals that require PWM - i.e. DC motors. 
 ## Connection
 
 The device advertises itself with the following description:
@@ -51,7 +52,7 @@ All messages are 72 bits - i.e. 9 bytes, with common initiation and termination 
 Message Envelope: 4 bytes (32 bits)
 Message Content:  5 bytes (40 bits)
 
-byte 1 -> 0x7E (126)   | Initiation Sequence - Byte 1
+byte 1 -> 0x7E (126)   | Initiation Byte
 byte 2 -> Optional?    | Seems to work when set to 0x00, but app sets to a unique value per command.
 byte 3 -> Command Type |
 byte 4 -> Parameter    | Where a parameter is not in use, it appears to be set to
@@ -59,12 +60,7 @@ byte 5 -> Parameter    | the value of 255(0xFF) - 11111111. Although using 0x00 
 byte 6 -> Parameter    | to be acceptable to?
 byte 7 -> Parameter    |
 byte 8 -> Optional?    | Tends to be set to either 16 or 0; doesn't seem to effect functionality.
-byte 9 -> 0xEF (239)   | Termination Sequence
-
-notes: this isn't what the app says.
-0 -> always 126
-8 -> always -17
-
+byte 9 -> 0xEF (239)   | Termination Byte
 ```
 
 The Android app differentiates between control messages and data messages - using different device lists as targets. However the generation of those lists appear to be identical, so the intention isn't clear. It's worth noting that there's quite a lot of logic in the app that seems redundant - such as advertising. `@todo`
@@ -168,11 +164,11 @@ description
 -------------
   1   | 0x7E
   2   | 0x00
-  3   | 
-  4   | 
-  5   | 
-  6   | 
-  7   | 
+  3   | 0x01
+  4   | uint8 - brightness
+  5   | uint8 - light mode
+  6   | 0x00
+  7   | 0x00
   8   | 0x00
   9   | 0xEF
 ```
@@ -202,11 +198,11 @@ description
 -------------
   1   | 0x7E
   2   | 0x00
-  3   | 
-  4   | 
-  5   | 
-  6   | 
-  7   | 
+  3   | 0x05
+  4   | 0x02
+  5   | uint8 - warm | these values must total 100
+  6   | uint8 - cold |
+  7   | 0x00
   8   | 0x00
   9   | 0xEF
 ```
@@ -236,11 +232,11 @@ description
 -------------
   1   | 0x7E
   2   | 0x00
-  3   | 
-  4   | 
-  5   | 
-  6   | 
-  7   | 
+  3   | 0x05
+  4   | 0x01
+  5   | uint8 - color
+  6   | 0x00
+  7   | 0x00
   8   | 0x00
   9   | 0xEF
 ```

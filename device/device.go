@@ -10,22 +10,38 @@ import (
 )
 
 const (
-	BLEDOM_ServiceUUID        = "0000fff0-0000-1000-8000-00805f9b34fb"
+	// Service UUID - Sourced from DuoCol Android APK
+	BLEDOM_ServiceUUID = "0000fff0-0000-1000-8000-00805f9b34fb"
+	// Characteristic UUID - Sourced from DuoCol Android APK
 	BLEDOM_CharacteristicUUID = "0000fff3-0000-1000-8000-00805f9b34fb"
-	BLEDOM_DeviceNamePrefix   = "ELK"
+	// Expected BLE Name Prefix - the device doesn't advertise it's true
+	// services, so we identify the beginning of their advertised *name*
+	BLEDOM_DeviceNamePrefix = "ELK"
 )
 
 var (
-	ErrScanTimeout                = errors.New("timed out attempting to discover device")
-	ErrServiceNotAvailable        = errors.New("device does not implement required service")
+	// ErrScanTimeout occurs when the user provided timeout duration elapses
+	// before the adapter has correctly identified a device from scanning.
+	ErrScanTimeout = errors.New("timed out attempting to discover device")
+	// ErrServiceNotAvailable occurs when the connected device - i.e. the one
+	// identified via scanning that matches the expected device name - does not
+	// implement the expected service UUID.
+	ErrServiceNotAvailable = errors.New("device does not implement required service")
+	// ErrCharacteristicNotAvailable occurs when the connected device *does*
+	// implement the expected the service UUID, but the expected characteristic
+	// UUID is not available.
 	ErrCharacteristicNotAvailable = errors.New("unable to access required characteristic on device")
 )
 
+// Options contains general - and *optional* - configuration settings for the
+// `BleDom` device. This includes things such as the Bluetooth adapter to use,
+// or the parameters for the underlying Bluetooth connection attempt.
 type Options struct {
 	Adapter    *bluetooth.Adapter
 	ConnParams bluetooth.ConnectionParams
 }
 
+// BleDom represents a ELK-BLEDOM device.
 type BleDom struct {
 	opts           *Options
 	ctx            context.Context
@@ -36,6 +52,8 @@ type BleDom struct {
 	commandCh      chan []byte
 }
 
+// NewBleDomRGBController creates a new `BleDom`, and - due to internal state -
+// is the only way to actually create one.
 func NewBleDomRGBController(parentCtx context.Context, opts Options) *BleDom {
 	ctx, cancel := context.WithCancel(parentCtx)
 	return &BleDom{
@@ -44,6 +62,10 @@ func NewBleDomRGBController(parentCtx context.Context, opts Options) *BleDom {
 	}
 }
 
+// Connect handles the initial connection to the BLE device, it may return an
+// error for any one of it's multiple failure points. After Connect has been
+// called (and ran successfully without error) the device will be ready for
+// sending commands to.
 func (b *BleDom) Connect(timeout time.Duration) error {
 	if b.opts.Adapter == nil {
 		b.opts.Adapter = bluetooth.DefaultAdapter
@@ -103,8 +125,12 @@ func (b *BleDom) Connect(timeout time.Duration) error {
 	return nil
 }
 
+// Poller is a consumer-provided callback function used for handling state
+// monitoring via `PollState`.
 type Poller func([]byte)
 
+// PollState will call `cb` at an interval of `d`, providing access to the
+// latest state of the connected device.
 func (b *BleDom) PollState(d time.Duration, cb Poller) {
 	go func() {
 		t := time.NewTimer(d)
@@ -122,18 +148,25 @@ func (b *BleDom) PollState(d time.Duration, cb Poller) {
 	}()
 }
 
+// Command is an interface used internally by the package, allowing different
+// Command types (i.e. BrightnessCommand or ColourCommand) to generate their
+// own byte payloads.
 type Command interface {
 	raw() []byte
 }
 
+// WriteCommand accepts a Command object and dispatches it to the device.
 func (b *BleDom) WriteCommand(cmd Command) {
 	b.commandCh <- cmd.raw()
 }
 
+// Stop terminates the device connection and prevents any further operations.
+// Note that any pending operations may still execute.
 func (b *BleDom) Stop() {
 	b.cancel()
 }
 
+// Done blocks until the device connection has been gracefully terminated.
 func (b *BleDom) Done() {
 	<-b.ctx.Done()
 }
