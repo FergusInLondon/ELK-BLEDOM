@@ -6,7 +6,11 @@ Bluetooth interactions have been reverse engineered from the Android app. See [`
 
 ## Example
 
-See [colours.go](example/colours.go).
+<p align="center">
+	<a href="https://www.youtube.com/watch?v=xiWuZdq0pWM">
+		<img src="https://img.youtube.com/vi/xiWuZdq0pWM/0.jpg" />
+	</a>
+</p>
 
 ```go
 func main() {
@@ -54,3 +58,5 @@ func main() {
 	}
 }
 ```
+
+See [colours.go](example/colours.go).
