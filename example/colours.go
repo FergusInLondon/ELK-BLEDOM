@@ -15,7 +15,9 @@ var commands []*device.ColourCommand = []*device.ColourCommand{
 	device.ColourCommandFromValues(0x80, 0x00, 0x00),
 	device.ColourCommandFromValues(0x80, 0x80, 0x00),
 	device.ColourCommandFromValues(0x80, 0x00, 0x80),
-	device.ColourCommandFromValues(0x80, 0x80, 0x80),
+	device.ColourCommandFromValues(0x00, 0x80, 0x00),
+	device.ColourCommandFromValues(0x00, 0x80, 0x80),
+	device.ColourCommandFromValues(0x00, 0x00, 0x80),
 }
 
 func gracefulTermination(cancel context.CancelFunc, d *device.BleDom) {
@@ -55,16 +57,17 @@ func main() {
 	d.WriteCommand(device.BrightnessCommandFromValue(0x80))
 
 	i := 1
+	t := time.NewTimer(time.Second)
 	for {
-		t := time.NewTimer(time.Second)
-
 		select {
 		case <-ctx.Done():
 			fmt.Println("context cancelled: stopping commands")
 			t.Stop()
 			return
 		case <-t.C:
-			d.WriteCommand(commands[len(commands)%i])
+			cmd := commands[i%len(commands)]
+			fmt.Println("changing colour: ", cmd.Red, cmd.Green, cmd.Blue)
+			d.WriteCommand(cmd)
 
 			i = i + 1
 			t.Reset(time.Second)
